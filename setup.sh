@@ -1,3 +1,24 @@
+#!/bin/bash
+
+# Exit on any error
+set -e
+
+# Variables
+SYS_MON_DIR="/opt/sysmon"
+VENV_DIR="$SYS_MON_DIR/env"
+SERVICE_FILE="/etc/systemd/system/sysmon-beat.service"
+PYTHON_SCRIPT="$SYS_MON_DIR/sysmon_json.py"
+
+echo "Step 1: Creating virtual environment..."
+python3 -m venv "$VENV_DIR"
+
+echo "Step 2: Activating virtual environment and installing lxml..."
+source "$VENV_DIR/bin/activate"
+pip install --upgrade pip
+pip install lxml
+deactivate
+
+
 cat > /opt/sysmon/sysmon_json.py <<EOF
 import asyncio
 import logging
@@ -152,5 +173,31 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
 EOF
+
+echo "Step 3: Creating systemd service file..."
+cat <<EOF | sudo tee "$SERVICE_FILE" > /dev/null
+[Unit]
+Description=SysMon JSON Monitoring Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/sysmon
+ExecStart=/opt/sysmon/env/bin/python3 /opt/sysmon/sysmon_json.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+echo "Step 4: Reloading systemd, enabling and starting service..."
+sudo systemctl daemon-reload
+sudo systemctl enable sysmon-beat.service
+sudo systemctl start sysmon-beat.service
+
+echo "✅ Sysmon service installed and started successfully!"
+sudo systemctl status sysmon-beat.service --no-pager
+
