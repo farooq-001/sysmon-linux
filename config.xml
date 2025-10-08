@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Sysmon schemaversion="4.81">
+<EventFiltering>
+
+    <!-- Event ID 1: ProcessCreate -->
+    <RuleGroup name="NewProcessDetected" groupRelation="or">
+      <ProcessCreate onmatch="include">
+	<Image condition="contains any">/curl;/wget</Image>
+        <Image condition="contains any">.sh;.py;.elf;.bin</Image>
+      </ProcessCreate>
+    </RuleGroup>
+
+    <!-- RemoteLogin Activity -->	
+    <RuleGroup name="RemoteLoginActivity" groupRelation="or">
+      <!-- Process Creation: Remote access tools only -->
+      <ProcessCreate onmatch="include">
+        <Image condition="contains any">/ssh;/sshd;/mstsc;/svchost;/xrdp;/xrdp-sesman;/vncviewer;/vncserver;/x11vnc;/tightvnc;/TeamViewer;/AnyDesk;/telnet</Image>
+        <CommandLine condition="contains any">termservice;/v:;rdp://;vnc://;xrdp;--rfbport;TeamViewer --login;AnyDesk --service</CommandLine>
+      </ProcessCreate>
+      <NetworkConnect onmatch="include">
+        <DestinationPort condition="is any">22;23;3389;5900;5901;5938;7070</DestinationPort>
+      </NetworkConnect>
+    </RuleGroup>
+
+    <!-- Rule for detecting local execution of port scanning tools -->
+    <RuleGroup name="PortScanningToolActivity" groupRelation="or">
+      <ProcessCreate onmatch="include">
+        <Image condition="contains any">/nmap;/masscan;/zmap;/usr/bin/nmap;/usr/local/bin/nmap;/usr/local/bin/masscan;/usr/local/bin/zmap</Image>
+        <!-- Capture scanning-specific command-line arguments -->
+        <CommandLine condition="contains any">-sS;-sT;-sU;-p;scan</CommandLine>
+      </ProcessCreate>
+    </RuleGroup>
+
+    <!-- User Permission Management Activity commands -->
+    <RuleGroup name="UserPermissionManagementActivity" groupRelation="or">
+      <ProcessCreate onmatch="include">
+	<Image condition="contains any">/whoami;/id;/useradd;/usermod;/userdel;/chpasswd;/passwd;/chmod;/chown;/chgrp;/umask;/emacs</Image>
+      </ProcessCreate>
+    </RuleGroup>
+
+    <!-- Compression Tool commands -->
+    <RuleGroup name="CompressionToolsActivity" groupRelation="or">
+      <ProcessCreate onmatch="include">
+	<Image condition="contains any">/tar;/gzip;/bzip2;/zip;/unzip;/7z;/rar;/zstd</Image>
+      </ProcessCreate>
+    </RuleGroup>
+
+    <!-- Shell environment Utilities commands -->
+    <RuleGroup name="BasicCMDActivity" groupRelation="or">
+      <ProcessCreate onmatch="include">
+	<Image condition="contains any">/ifconfig;/netstat/nc;/echo;/env;/export;/alias;/history</Image>
+      </ProcessCreate>
+    </RuleGroup>
+
+    <!-- PackageManagement commands -->
+    <RuleGroup name="PackageManagementActivity" groupRelation="or">
+      <ProcessCreate onmatch="include">
+	<Image condition="contains any">/apt;/yum;/dnf;/rpm;/zypper</Image>
+      </ProcessCreate>
+    </RuleGroup>
+
+    <!-- ProcessManagement commands -->
+    <RuleGroup name="ProcessManagementActivity" groupRelation="or">
+      <ProcessCreate onmatch="include">
+	<Image condition="contains any">/ps;/kill;/killall;/pgrep</Image>
+      </ProcessCreate>
+    </RuleGroup>
+    
+    <!-- SystemResource commands -->
+    <RuleGroup name="SystemResourceActivity" groupRelation="or">
+      <ProcessCreate onmatch="include">
+        <Image condition="contains any">/top;/htop;/free;/vmstat;/iostat;/mpstat;/pidstat;/sar;/uptime;/df;/du;/lsblk;/pmap;/iotop;/iftop</Image>
+      </ProcessCreate>
+    </RuleGroup>
+
+    <!-- Monitor Directory And File commands -->
+    <RuleGroup name="DirectoryAndFileActivity" groupRelation="or">
+      <ProcessCreate onmatch="include">
+	<Image condition="contains any">/ls;/mkdir;/rmdir;/tree;/mv;/cp;/find;/cat;/less;/more;/head;/tail;/nano;/vim;/vi;/touch;/rm;/emacs;/sed;/awk;/sort;/uniq;/wc;/cut</Image>
+      </ProcessCreate>
+    </RuleGroup>
+
+    <!-- CriticalAlert -->
+    <RuleGroup name= "CriticalAlert" groupRelation="or">
+      <ProcessCreate onmatch="include">
+	<Image condition="contains any">/reboot;/shutdown;/sudo</Image>
+      </ProcessCreate>
+    </RuleGroup>
+
+    <RuleGroup name="FileDataTransfer" groupRelation="or">
+      <ProcessCreate onmatch="include">
+        <!-- Transfer tool binaries -->
+        <Image condition="contains">/usr/bin/scp</Image>
+        <Image condition="contains">/usr/bin/sftp</Image>
+        <Image condition="contains">/usr/bin/ftp</Image>
+        <Image condition="contains">/usr/bin/rsync</Image>
+        <Image condition="contains">/usr/bin/nc</Image>
+        <Image condition="contains">/usr/bin/socat</Image>
+        <Image condition="contains">/usr/bin/aws</Image>
+        <Image condition="contains">/usr/bin/gcloud</Image>
+        <Image condition="contains">/usr/bin/az</Image>
+        <Image condition="contains">/usr/bin/rclone</Image>
+        <Image condition="contains">/usr/bin/lftp</Image>
+        <!-- Transfer-related command lines -->
+        <CommandLine condition="contains">scp</CommandLine>
+        <CommandLine condition="contains">sftp</CommandLine>
+        <CommandLine condition="contains">ftp</CommandLine>
+        <CommandLine condition="contains">rsync</CommandLine>
+        <CommandLine condition="contains">nc</CommandLine>
+        <CommandLine condition="contains">socat</CommandLine>
+        <CommandLine condition="contains">aws s3</CommandLine>
+        <CommandLine condition="contains">gcloud storage</CommandLine>
+        <CommandLine condition="contains">az storage</CommandLine>
+        <CommandLine condition="contains">rclone copy</CommandLine>
+        <CommandLine condition="contains">lftp</CommandLine>
+      </ProcessCreate>
+    </RuleGroup>
+
+    <RuleGroup name="FirewallActivity" groupRelation="or">
+      <!-- Process Creation: Monitor firewall-related binaries and commands -->
+      <ProcessCreate onmatch="include">
+        <!-- Firewall tool binaries -->
+        <Image condition="contains">/usr/bin/sudo</Image>
+        <Image condition="contains">/usr/bin/firewall-cmd</Image>
+        <Image condition="contains">/usr/sbin/iptables</Image>
+        <Image condition="contains">/usr/sbin/ip6tables</Image>
+        <Image condition="contains">/usr/sbin/nft</Image>
+        <Image condition="contains">/usr/sbin/ufw</Image>
+        <Image condition="contains">/usr/sbin/arptables</Image>
+        <Image condition="contains">/usr/sbin/ebtables</Image>
+        <Image condition="contains">/usr/sbin/shorewall</Image>
+        <Image condition="contains">/usr/sbin/csf</Image>
+        <Image condition="contains">/usr/bin/fail2ban-client</Image>
+        <!-- Firewall-related command lines -->
+        <CommandLine condition="contains">firewall-cmd</CommandLine>
+        <CommandLine condition="contains">iptables</CommandLine>
+        <CommandLine condition="contains">ip6tables</CommandLine>
+        <CommandLine condition="contains">nft</CommandLine>
+        <CommandLine condition="contains">ufw</CommandLine>
+        <CommandLine condition="contains">arptables</CommandLine>
+        <CommandLine condition="contains">ebtables</CommandLine>
+        <CommandLine condition="contains">shorewall</CommandLine>
+        <CommandLine condition="contains">csf</CommandLine>
+        <CommandLine condition="contains">fail2ban</CommandLine>
+      </ProcessCreate>
+
+      <!-- File Creation/Modification: Monitor firewall config file changes -->
+      <FileCreateTime onmatch="include">
+        <TargetFilename condition="contains">/etc/ufw/</TargetFilename>
+        <TargetFilename condition="contains">/etc/default/ufw</TargetFilename>
+        <TargetFilename condition="contains">/etc/iptables/</TargetFilename>
+        <TargetFilename condition="contains">/etc/nftables.conf</TargetFilename>
+        <TargetFilename condition="contains">/etc/firewalld/</TargetFilename>
+        <TargetFilename condition="contains">/etc/shorewall/</TargetFilename>
+        <TargetFilename condition="contains">/etc/csf/</TargetFilename>
+        <TargetFilename condition="contains">/etc/fail2ban/</TargetFilename>
+      </FileCreateTime>
+    </RuleGroup>
+
+    <!-- Systemctl Activity: Log all systemctl commands and systemd unit file modifications -->
+    <RuleGroup name="SystemManagementActivity" groupRelation="or">
+      <ProcessCreate onmatch="include">
+	<!-- Capture systemctl binary in common locations -->
+	<Image condition="contains any">/bash;/cron;/at;/journalctl</Image>
+        <Image condition="is">/usr/bin/systemctl</Image>
+        <Image condition="is">/bin/systemctl</Image>
+        <Image condition="contains">systemctl</Image> <!-- Fallback for custom or symlinked paths -->
+      </ProcessCreate>
+      <FileCreateTime onmatch="include">
+        <!-- Common systemd unit file paths across distributions -->
+        <TargetFilename condition="begin with">/etc/systemd/system/</TargetFilename>
+        <TargetFilename condition="begin with">/usr/lib/systemd/system/</TargetFilename>
+        <TargetFilename condition="begin with">/lib/systemd/system/</TargetFilename>
+        <TargetFilename condition="begin with">/usr/local/lib/systemd/system/</TargetFilename>
+        <TargetFilename condition="begin with">/run/systemd/system/</TargetFilename>
+        <TargetFilename condition="begin with">/var/lib/systemd/</TargetFilename>
+        <!-- Capture common systemd unit file types -->
+        <TargetFilename condition="end with">.service</TargetFilename>
+        <TargetFilename condition="end with">.timer</TargetFilename>
+        <TargetFilename condition="end with">.socket</TargetFilename>
+        <TargetFilename condition="end with">.target</TargetFilename>
+        <TargetFilename condition="end with">.mount</TargetFilename>
+        <TargetFilename condition="end with">.path</TargetFilename>
+      </FileCreateTime>
+      <FileCreate onmatch="include">
+        <!-- Common systemd unit file paths across distributions -->
+        <TargetFilename condition="begin with">/etc/systemd/system/</TargetFilename>
+        <TargetFilename condition="begin with">/usr/lib/systemd/system/</TargetFilename>
+        <TargetFilename condition="begin with">/lib/systemd/system/</TargetFilename>
+        <TargetFilename condition="begin with">/usr/local/lib/systemd/system/</TargetFilename>
+        <TargetFilename condition="begin with">/run/systemd/system/</TargetFilename>
+        <TargetFilename condition="begin with">/var/lib/systemd/</TargetFilename>
+        <!-- Capture common systemd unit file types -->
+        <TargetFilename condition="end with">.service</TargetFilename>
+        <TargetFilename condition="end with">.timer</TargetFilename>
+        <TargetFilename condition="end with">.socket</TargetFilename>
+        <TargetFilename condition="end with">.target</TargetFilename>
+        <TargetFilename condition="end with">.mount</TargetFilename>
+        <TargetFilename condition="end with">.path</TargetFilename>
+      </FileCreate>
+    </RuleGroup>
+
+</EventFiltering>
+</Sysmon>
+
