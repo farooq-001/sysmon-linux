@@ -10,7 +10,7 @@ SERVICE_FILE="/etc/systemd/system/sysmon-beat.service"
 PYTHON_SCRIPT="$SYS_MON_DIR/sysmon_json.py"
 
 echo "Step 1: Creating virtual environment..."
-python3 -m venv "$VENV_DIR"
+python3.9 -m venv "$VENV_DIR"
 
 echo "Step 2: Activating virtual environment and installing lxml..."
 source "$VENV_DIR/bin/activate"
